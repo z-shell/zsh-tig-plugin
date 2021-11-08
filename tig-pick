@@ -1,0 +1,79 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+
+#
+# The `contrib/tig-pick' script rewritten to be a Zsh FUNCTION and/or SCRIPT.
+#
+
+#
+# The original tig-pick header said:
+#
+# 'tig-pick' is a wrapper script that uses 'tig' to pick a Git commit from the
+# history. On success, The script prints the ID of the commit to standard
+# output, so that it can be used as a parameter for subsequent commands, e.g.
+# 'git rebase -i $(tig-pick)'
+#
+# All parameters passed to the script will be forwarded to 'tig'.
+#
+
+# Modifications copyright (c) 2019 Sebastian Gniazdowski
+
+# Run as script?
+if [[ $0 != tig-pick || -n $ZSH_SCRIPT ]]; then
+    # Handle $0 according to the Zsh Plugin Standard:
+    # http://z-shell.github.io/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html
+    0=${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}
+    0=${${(M)0##/*}:-$PWD/$0}
+    [[ -d ${0:h} && -f ${0:h}/zsh_tig_plugin_update ]] && local ZSH_TIG_DIR=${0:h}
+fi
+
+# Properly verify that the plugin directory is correct
+# - it might come from the detection above or from
+# outside (also exported) parameter
+[[ ! -d $ZSH_TIG_DIR || ! -f $ZSH_TIG_DIR/zsh_tig_plugin_update ]] && {
+    print -u2 -P "%F{160}Couldn't determine plugin's directory" \
+            "(got: \`$ZSH_TIG_DIR')%f"
+    return 1
+}
+
+# Standard options, as per the plugin standard
+emulate -LR zsh -o extended_glob -o warn_create_global -o typeset_silent \
+        -o no_short_loops -o rc_quotes -o no_auto_pushd
+
+local config="$(command mktemp)" stderr
+integer status
+
+trap "command rm -f '$config'" EXIT
+trap "command rm -f '$config'; return 1" INT TERM HUP
+
+# Prepare config file
+print -r -- "source $ZSH_TIG_DIR/tigrc" >! $config
+
+# Bind Enter to print the selected commit ID to error output
+# and return after that.
+print -r -- 'bind main <Enter> <sh -c "echo %(commit) >&2"' >>! $config
+
+# Run tig with the standard and error output channels swapped.
+local -x TIGRC_USER=$config
+stderr=$(command tig "$@" 3>&2 2>&1 1>&3 3>&-) || {
+    status=$?
+    print -u2 -r -- $stderr
+    return $status
+}
+commit="$(print -r -- "$stderr" | command tail -n1)"
+
+# Check the returned string for a valid commit ID
+if [[ $commit != [0-9a-f](#c40,40) ]]; then
+    print -u2 -rP -- "%F{160}$stderr%f"
+    return 1
+fi
+
+# Check if the selection was done on a non-commit entry
+if [[ $commit = 0(#c40,40) ]]; then
+    print -u2 -rP -- "%F{160}No commit selected%f"
+    return 1
+fi
+
+print -r -- $commit
+
+# vim:ft=zsh:sw=4:sts=4:et

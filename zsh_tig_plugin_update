@@ -1,0 +1,63 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+#
+# Copyright (c) 2019 Sebastian Gniazdowski
+
+# Run as script?
+if [[ $0 != zsh_tig_plugin_update || -n $ZSH_SCRIPT ]]; then
+    # Handle $0 according to the Zsh Plugin Standard:
+    # http://z-shell.github.io/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html
+    0=${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}
+    0=${${(M)0##/*}:-$PWD/$0}
+    [[ -d ${0:h} && -f ${0:h}/zsh_tig_plugin_update ]] && local ZSH_TIG_DIR=${0:h}
+fi
+
+# Properly verify that the plugin directory is correct
+# - it might come from the detection above or from
+# outside (also exported) parameter
+[[ ! -d $ZSH_TIG_DIR || ! -f $ZSH_TIG_DIR/zsh_tig_plugin_update ]] && {
+    print -u2 -P "%F{160}Couldn't determine plugin's directory" \
+            "(got: \`$ZSH_TIG_DIR')%f"
+    return 1
+}
+
+# Standard options, as per the plugin standard
+emulate -LR zsh -o extended_glob -o warn_create_global -o typeset_silent \
+        -o no_short_loops -o rc_quotes -o no_auto_pushd
+
+# Detect the user-tigrc location
+local orig
+if [[ -n $TIGRC_USER ]] {
+    orig=$TIGRC_USER
+} elif [[ -f ~/.tigrc ]] {
+    orig=~/.tigrc
+} elif [[ -f ${XDG_CONFIG_HOME:-$HOME/.config}/tig/config ]] {
+    orig=${XDG_CONFIG_HOME:-$HOME/.config}/tig/config
+}
+
+# Is there a problem with the tigrc?
+[[ -n $orig && ! -r $orig ]] && {
+    print -u2 -P "%F{160}The tig config file \`%F{141}$orig%F{160}' doesn't" \
+            "exist or isn't readable%f"
+    return 1
+}
+
+# Copy the user tigrc (if detected)
+command rm -f $ZSH_TIG_DIR/tigrc
+if [[ -n $orig ]] {
+    print -r -- "source $orig" >! $ZSH_TIG_DIR/tigrc
+} else {
+    print -P "%F{141}Warning: no user tigrc found%f"
+}
+
+# Apply the tigrc extensions
+print -r -- "source $ZSH_TIG_DIR/tigrc_extension" >>! $ZSH_TIG_DIR/tigrc
+integer retval=$?
+
+# Verify the last command's status
+(( !retval )) && \
+    { print -P "%F{141}Successfully updated the custom tigrc%f"; ((1)); } || \
+    print -u2 -P "%F{160}There was a problem creating the custom tigrc" \
+        "(detected plugin directory: %F{141}${ZSH_TIG_DIR%/.}%F{160})%f"
+
+# vim:ft=zsh:sw=4:sts=4:et

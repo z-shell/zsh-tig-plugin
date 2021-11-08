@@ -1,0 +1,51 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+#
+# Copyright (c) 2019 Sebastian Gniazdowski
+
+emulate -R zsh -o extended_glob -o warn_create_global -o typeset_silent \
+        -o no_short_loops -o rc_quotes -o no_auto_pushd
+
+# Debug mode - non-empty second argument
+[[ -z $2 ]] && trap "rm -f \$tmpfile" EXIT
+[[ -z $2 ]] && trap "rm -f \$tmpfile; exit 1" INT TERM QUIT HUP
+
+local dir=${1:h} file=${1:t}
+local tmpfile="${$(command mktemp):t}"
+local rule=${tmpfile#*.}
+
+builtin cd -q "$dir"
+
+[[ ! -e $file ]] && {
+    print -u2 "Error: the Makefile \`$file' doesn't exist"
+    exit 1
+}
+
+[[ ! -f $file ]] && {
+    print -u2 "Error: the Makefile \`$file' isn't a regular file"
+    exit 1
+}
+
+[[ ! -r $file ]] && {
+    print -u2 "Error: the Makefile \`$file' isn't readable"
+    exit 1
+}
+
+command cp "$file" "$tmpfile"
+
+command cat >>! "$tmpfile" <<EOF
+.PHONY: $rule
+$rule:
+	@LANG=C command \$(MAKE) -pRrq -f \$(lastword \$(MAKEFILE_LIST)) : \
+        2>/dev/null | \
+            command awk -v RS= -F: '/^# File/,/^# Finished Make data base/ \
+                {if (\$\$1 !~ "^[#.]") {print \$\$1}}' | \
+            command egrep -v -e '^[^[:alnum:]]' -e '^\$@\$\$'
+EOF
+
+local -a targets
+targets=( "${(@f)$(make 2>/dev/null $rule -f"$tmpfile")}" )
+
+print -rl -- ${(uon)targets[@]:#$rule}
+
+# vim:ft=zsh:sw=4:sts=4:et
