@@ -21,6 +21,7 @@
     - [xmc – eXecute Midnight Commander](#xmc--execute-midnight-commander)
     - [xhmc – eXecute Home Midnight Commander](#xhmc--execute-home-midnight-commander)
 - [Installation](#installation)
+  - [ZI](#zi)
   - [Zinit](#zinit)
   - [Antigen](#antigen)
   - [Oh-My-Zsh](#oh-my-zsh)
@@ -90,20 +91,27 @@ home directory.
 
 ## Installation
 
-### Zinit
 
-Add `zinit load z-shell/zsh-tig-plugin` to your `.zshrc` file. Zinit will
-clone the plugin the next time you start zsh. To update issue `zinit update
+### [ZI](https://github.com/z-shell/zi)
+
+Add `zi load z-shell/zsh-tig-plugin` to your `.zshrc` file. Zinit will
+clone the plugin the next time you start zsh. To update issue `zi update
 z-shell/zsh-tig-plugin`.
 
 ```zsh
-zinit load z-shell/zsh-tig-plugin
+zi load z-shell/zsh-tig-plugin
 ```
 
 Or with use of the Turbo mode:
 
 ```zsh
-zinit wait lucid for z-shell/zsh-tig-plugin
+zi wait lucid for z-shell/zsh-tig-plugin
+```
+
+### Zinit
+
+```zsh
+zinit load z-shell/zsh-tig-plugin
 ```
 
 ### Antigen
