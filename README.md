@@ -1,7 +1,9 @@
-# `ZSH-TIG-PLUGIN`
-
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<h2 align="center">
+  <a href="https://github.com/z-shell/zi">
+    <img src="https://github.com/z-shell/zi/raw/main/docs/images/logo.svg" alt="Logo" width="80" height="80" />
+  </a>
+❮ ZI ❯ Plugin - Zsh Tig
+</h2> 
 
 - [Introduction](#introduction)
 - [The Added Bindings](#the-added-bindings)
@@ -23,8 +25,6 @@
   - [Antigen](#antigen)
   - [Oh-My-Zsh](#oh-my-zsh)
   - [Zgen](#zgen)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Introduction
 
